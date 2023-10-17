@@ -306,6 +306,24 @@ typedef NS_ENUM(NSUInteger, LogLevel) {
 
             result(@(true));
         }
+        else if ([@"openL2CAPChannel" isEqualToString:call.method])
+        {
+            // remoteId is passed raw, not in a NSDictionary
+            NSString *remoteId = [call arguments];
+
+            CBPeripheral *peripheral = [self getConnectedPeripheral:remoteId];
+            if (peripheral == nil) {
+                NSString* s = @"device is disconnected";
+                result([FlutterError errorWithCode:@"discoverServices" message:s details:remoteId]);
+                return;
+            }
+
+            CBL2CAPPSM *psm = 0x0085 ;
+
+            [peripheral openL2CAPChannel:psm];
+
+            result(@(true));
+        }
         else if ([@"readCharacteristic" isEqualToString:call.method])
         {
             // See BmReadCharacteristicRequest
@@ -989,6 +1007,44 @@ typedef NS_ENUM(NSUInteger, LogLevel) {
 
     // Send updated tree
     [_methodChannel invokeMethod:@"OnDiscoverServicesResult" arguments:response];
+}
+
+- (void)peripheral:(CBPeripheral *)peripheral
+    didOpenL2CAPChannel:(CBL2CAPChannel *)channel
+                                      error:(NSError *)error
+{
+    if (error) {
+        NSLog(@"[FBP-iOS] didOpenL2CAPChannel: [Error] %@", [error localizedDescription]);
+    } else if (_logLevel >= debug) {
+        NSLog(@"[FBP-iOS] didOpenL2CAPChannel");
+        
+    }
+
+    // [channel.inputStream open];
+
+    // uint8_t byteValue = 0x04;
+    // NSData *dataToSend = [NSData dataWithBytes:&byteValue length:1];
+
+    // if(channel.outputStream == NSStreamStatusOpen){
+    //     NSInteger bytesWritten = [channel.outputStream write:dataToSend.bytes maxLength: dataToSend.length];
+    //     if(bytesWritten < 0){
+    //         NSLog(@"Error L2CAP writing",[channel.outputStream streamError]);
+
+    //     }else{
+    //         NSLog(@"Data sent succesfully");
+    //     }
+    //     }
+
+    // Flutter response
+    NSDictionary* response = @{
+        @"remote_id":       [peripheral.identifier UUIDString],
+        @"success":         error == nil ? @(1) : @(0),
+        @"error_string":    error ? [error localizedDescription] : [NSNull null],
+        @"error_code":      error ? @(error.code) : [NSNull null],
+    };
+
+    // Send updated tree
+    [_methodChannel invokeMethod:@"OnOpenL2CAPChannelResult" arguments:response];
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral

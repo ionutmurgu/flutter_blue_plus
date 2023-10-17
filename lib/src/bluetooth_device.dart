@@ -15,6 +15,9 @@ class BluetoothDevice {
   // used for 'isDiscoveringServices' public api
   final _StreamController<bool> _isDiscoveringServices = _StreamController(initialValue: false);
 
+  // used for L2CAP api
+  final _StreamController<bool> _isOpeningL2CAPChannel = _StreamController(initialValue: false);
+
   ////////////////////////////////
   // Public
   //
@@ -183,6 +186,44 @@ class BluetoothDevice {
     }
 
     return result;
+  }
+
+  /// Open an L2CAP connection
+  Future<void> openL2CAPChannel({int timeout = 15}) async {
+    String key = remoteId.str + ":openL2CAPChannel";
+    _Mutex opMutex = await _MutexFactory.getMutexForKey(key);
+    await opMutex.take();
+
+    try {
+      // signal that we have started
+      _isOpeningL2CAPChannel.add(true);
+
+      var responseStream = FlutterBluePlus._methodStream.stream
+          .where((m) => m.method == "OnOpenL2CAPChannelResult")
+          .map((m) => m.arguments)
+          .map((args) => BmOpenL2CAPChannelResult.fromMap(args))
+          .where((p) => p.remoteId == remoteId.str);
+
+      // Start listening now, before invokeMethod, to ensure we don't miss the response
+      Future<BmOpenL2CAPChannelResult> futureResponse = responseStream.first;
+
+      await FlutterBluePlus._invokeMethod(
+        'openL2CAPChannel',
+        remoteId.str,
+      );
+
+      // wait for response
+      BmOpenL2CAPChannelResult response = await futureResponse.fbpTimeout(timeout, "openL2CAPChannel");
+
+      // failed?
+      if (!response.success) {
+        throw FlutterBluePlusException(_nativeError, "openL2CAPChannel", response.errorCode ?? -1,
+            response.errorString ?? 'Failed to open L2CAP channel');
+      }
+    } finally {
+      _isOpeningL2CAPChannel.add(false);
+      opMutex.give();
+    }
   }
 
   // return the most recent disconnection reason

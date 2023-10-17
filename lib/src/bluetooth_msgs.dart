@@ -398,6 +398,29 @@ class BmDiscoverServicesResult {
   }
 }
 
+class BmOpenL2CAPChannelResult {
+  final String remoteId;
+  final bool success;
+  final int? errorCode;
+  final String? errorString;
+
+  BmOpenL2CAPChannelResult({
+    required this.remoteId,
+    required this.success,
+    required this.errorCode,
+    required this.errorString,
+  });
+
+  factory BmOpenL2CAPChannelResult.fromMap(Map<dynamic, dynamic> json) {
+    return BmOpenL2CAPChannelResult(
+      remoteId: json['remote_id'],
+      success: json['success'] != 0,
+      errorCode: json['error_code'],
+      errorString: json['error_string'],
+    );
+  }
+}
+
 class BmReadCharacteristicRequest {
   final String remoteId;
   final Guid serviceUuid;
@@ -833,7 +856,7 @@ class BmBondStateResponse {
   final String remoteId;
   final BmBondStateEnum bondState;
   final bool bondFailed; // only possible when bondState.none
-  final bool bondLost;   // only possible when bondState.none
+  final bool bondLost; // only possible when bondState.none
 
   BmBondStateResponse({
     required this.remoteId,

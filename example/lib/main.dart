@@ -558,6 +558,23 @@ class DeviceScreen extends StatelessWidget {
                       }),
                 ),
               ),
+              ListTile(
+                title: const Text('Connect L2CAP'),
+                trailing: IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () async {
+                      try {
+                        await device.openL2CAPChannel();
+                        final snackBar = snackBarGood("L2CAP Connection success");
+                        snackBarKeyC.currentState?.removeCurrentSnackBar();
+                        snackBarKeyC.currentState?.showSnackBar(snackBar);
+                      } catch (e) {
+                        final snackBar = snackBarFail(prettyException("L2CAP Connection Error:", e));
+                        snackBarKeyC.currentState?.removeCurrentSnackBar();
+                        snackBarKeyC.currentState?.showSnackBar(snackBar);
+                      }
+                    }),
+              ),
               StreamBuilder<List<BluetoothService>>(
                 stream: device.servicesStream,
                 initialData: const [],
